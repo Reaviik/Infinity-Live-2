@@ -104,7 +104,8 @@
     var ver = document.getElementById('dlVersion');
     var hashBox = document.getElementById('dlHash');
     var hashVal = document.getElementById('dlHashVal');
-    // ?server=https://seu-servidor:porta permite apontar p/ outra origem
+    // ?server=https://outro-endereco permite apontar p/ outra origem.
+    // No Netlify, o padrão é relativo (o netlify.toml repassa p/ a VPS).
     var base = '';
     try {
       var q = new URLSearchParams(location.search);
@@ -114,12 +115,6 @@
       btn.classList.add('disabled');
       btn.removeAttribute('href');
       note.textContent = msg;
-    }
-    // página em https + servidor em http = navegador bloqueia (conteúdo misto)
-    if (location.protocol === 'https:' && base.indexOf('http://') === 0) {
-      ver.textContent = 'VERSÃO …';
-      fail('Use https no servidor ou abra esta página em http.');
-      return;
     }
     function fmtSize(b) {
       b = Number(b) || 0;
@@ -150,7 +145,7 @@
       }
     }).catch(function () {
       ver.textContent = 'VERSÃO …';
-      fail(base ? 'Não achei a versão nesse endereço.' : 'Abra esta página pelo endereço do servidor.');
+      fail('Não consegui carregar a versão agora — tente de novo em instantes.');
     });
   })();
 </script>
