@@ -55,6 +55,8 @@
   .dl-btn:hover { transform: scale(1.04); box-shadow: 0 10px 50px rgba(47, 143, 101, 0.55); }
   .dl-btn.disabled { opacity: 0.5; pointer-events: none; }
   .dl-note { margin-top: 14px; font-size: 12px; color: rgba(180, 195, 230, 0.5); }
+  .dl-hash { margin-top: 10px; font-size: 11px; color: rgba(140, 227, 184, 0.75); font-family: Consolas, monospace; cursor: pointer; word-break: break-all; max-width: 470px; }
+  .dl-hash:hover { color: #8fe3b8; }
   .steps { display: flex; gap: 12px; margin-top: 44px; flex-wrap: wrap; justify-content: center; }
   .step { width: 160px; padding: 16px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(150, 180, 255, 0.12); }
   .step b { display: block; font-size: 22px; margin-bottom: 8px; }
@@ -87,6 +89,7 @@
   </div>
   <a class="dl-btn disabled" id="dlBtn" href="#">⬇ BAIXAR</a>
   <div class="dl-note" id="dlNote">Procurando a última versão…</div>
+  <div class="dl-hash" id="dlHash" style="display:none" title="Clique para copiar e conferir após baixar">sha256: <span id="dlHashVal"></span></div>
   <div class="steps">
     <div class="step"><b>⬇</b><p>Baixe e abra o arquivo. Não precisa instalar.</p></div>
     <div class="step"><b>🎟</b><p>Entre com o código de convite do servidor.</p></div>
@@ -99,6 +102,8 @@
     var btn = document.getElementById('dlBtn');
     var note = document.getElementById('dlNote');
     var ver = document.getElementById('dlVersion');
+    var hashBox = document.getElementById('dlHash');
+    var hashVal = document.getElementById('dlHashVal');
     // ?server=https://seu-servidor:porta permite apontar p/ outra origem
     var base = '';
     try {
@@ -110,6 +115,17 @@
       btn.removeAttribute('href');
       note.textContent = msg;
     }
+    // página em https + servidor em http = navegador bloqueia (conteúdo misto)
+    if (location.protocol === 'https:' && base.indexOf('http://') === 0) {
+      ver.textContent = 'VERSÃO …';
+      fail('Use https no servidor ou abra esta página em http.');
+      return;
+    }
+    function fmtSize(b) {
+      b = Number(b) || 0;
+      if (b <= 0) return '';
+      return ' • ' + (b / 1048576).toFixed(1).replace('.', ',') + ' MB';
+    }
     fetch(base + '/latest.json', { cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('http ' + r.status);
       return r.json();
@@ -118,7 +134,20 @@
       ver.textContent = 'VERSÃO ' + j.version;
       btn.href = base + j.url;
       btn.classList.remove('disabled');
-      note.textContent = 'Windows 10/11 64-bit • portable, sem instalar';
+      note.textContent = 'Windows 10/11 64-bit • portable, sem instalar' + fmtSize(j.size);
+      // conferência anti-troca: compare após baixar com
+      // certutil -hashfile arquivo.exe SHA256
+      if (j.sha256) {
+        hashVal.textContent = String(j.sha256).slice(0, 20) + '…';
+        hashBox.style.display = '';
+        hashBox.addEventListener('click', function () {
+          var full = String(j.sha256);
+          function done(ok) { note.textContent = ok ? 'Hash copiado — confira com certutil -hashfile.' : full; }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(full).then(function () { done(true); }, function () { done(false); });
+          } else { done(false); }
+        });
+      }
     }).catch(function () {
       ver.textContent = 'VERSÃO …';
       fail(base ? 'Não achei a versão nesse endereço.' : 'Abra esta página pelo endereço do servidor.');
