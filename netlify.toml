@@ -1,0 +1,17 @@
+# Netlify: repassa versão e download p/ a VPS (evita o bloqueio de
+# conteúdo misto: o navegador só fala https com o Netlify, e é o Netlify
+# quem busca na VPS em http, no servidor — nada vaza no navegador).
+# Publique junto do download.html (renomeado p/ index.html).
+# Troque o IP:porta abaixo pelo VPS_URL do seu .env, se for outro.
+
+[[redirects]]
+  from = "/latest.json"
+  to = "http://148.230.76.21:25514/latest.json"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/releases/*"
+  to = "http://148.230.76.21:25514/releases/:splat"
+  status = 200
+  force = true
